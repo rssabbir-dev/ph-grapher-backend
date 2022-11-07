@@ -16,7 +16,16 @@ app.get('/', (req, res) => {
 })
 
 //MongoDB Client
+const { MongoClient, ServerApiVersion } = require('mongodb');
+const uri = "mongodb+srv://<username>:<password>@cluster0.z9hjm.mongodb.net/?retryWrites=true&w=majority";
+const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+const run = async () => {
+    const database = client.db('phGrapherDB');
+    const serviceCollection = database.collection('services')
+}
+
+run().catch(err => console.log(err))
 
 //Listen server on PORT 
 app.listen(port, () => {
