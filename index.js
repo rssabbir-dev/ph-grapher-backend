@@ -63,9 +63,11 @@ const run = async () => {
 	});
 	//Get all Reviews
 	app.get('/reviews', async (req, res) => {
-		const query = {};
+		const service_id = req.query.service_id;
+		const query = { service_id: service_id };
 		const reviews = await reviewCollection.find(query).toArray();
 		const count = await reviewCollection.estimatedDocumentCount();
+		console.log(reviews);
 		res.send({ count, reviews });
 	});
 };
