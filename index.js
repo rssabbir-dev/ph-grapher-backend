@@ -23,12 +23,35 @@ const client = new MongoClient(uri, {
 	useUnifiedTopology: true,
 	serverApi: ServerApiVersion.v1,
 });
+//Verify JWT Token
+const verifyTwtToken = (req, res, next) => {
+	const authHeader = req.headers.authorization;
+	const token = authHeader.split(' ')[1];
+	if (!authHeader) {
+		return res.status(401).send({ message: 'Unauthorized Access' });
+	}
+	jwt.verify(token, process.env.JWT_ACCESS_TOKEN, (err, decoded) => {
+		if (err) {
+			return res.status(401).send({ message: 'Unauthorized Access' });
+		}
+		req.decoded = decoded;
+	});
+	next();
+};
 
 //Client Start Function
 const run = async () => {
 	const database = client.db('phGrapherDB');
 	const serviceCollection = database.collection('services');
 	const reviewCollection = database.collection('reviews');
+
+	//JWT verify path
+	app.post('/jwt', (req, res) => {
+		const user = req.body;
+		jwt.sign(user, process.env.JWT_ACCESS_TOKEN, (err, token) => {
+			res.send({ token });
+		});
+	});
 
 	//Get All Services
 	app.get('/services', async (req, res) => {
@@ -66,9 +89,25 @@ const run = async () => {
 		const service_id = req.query.service_id;
 		const query = { service_id: service_id };
 		const reviews = await reviewCollection.find(query).toArray();
-		const count = await reviewCollection.estimatedDocumentCount();
-		console.log(reviews);
+		const count = await reviewCollection.countDocuments(query);
 		res.send({ count, reviews });
+	});
+
+	//Get Single User Review
+	app.get('/my-review', verifyTwtToken, async (req, res) => {
+		const decoded = req.decoded;
+		const uid = req.query.uid;
+		const query = { user_uid: uid };
+		if (decoded.uid !== uid) {
+			return res.status(403).send({ message: 'Access Forbidden' });
+		} else {
+			const reviews = await reviewCollection
+				.find(query)
+				.sort({ createAt: -1 })
+				.toArray();
+			const count = await reviewCollection.countDocuments(query);
+			res.send({ count, reviews });
+		}
 	});
 };
 //Client Start
