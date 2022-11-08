@@ -28,6 +28,7 @@ const client = new MongoClient(uri, {
 const run = async () => {
 	const database = client.db('phGrapherDB');
 	const serviceCollection = database.collection('services');
+	const reviewCollection = database.collection('reviews');
 
 	//Get All Services
 	app.get('/services', async (req, res) => {
@@ -52,6 +53,13 @@ const run = async () => {
 		const query = { _id: ObjectId(id) };
 		const service = await serviceCollection.findOne(query);
 		res.send(service);
+	});
+
+	//Post A review
+	app.post('/review', async (req, res) => {
+		const review = req.body;
+		const result = await reviewCollection.insertOne(review);
+		res.send(result);
 	});
 };
 //Client Start
