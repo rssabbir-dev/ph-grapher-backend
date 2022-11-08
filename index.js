@@ -109,6 +109,20 @@ const run = async () => {
 			res.send({ count, reviews });
 		}
 	});
+
+	//Delete A My Review 
+	app.delete('/my-review-delete/', verifyTwtToken,async (req, res) => {
+		const decoded = req.decoded;
+		const id = req.query.id;
+		const uid = req.query.uid;
+		const query = { _id: ObjectId(id) };
+		if (decoded.uid !== uid) {
+			return res.status(403).send({ message: 'Access Forbidden' });
+		} else {
+			const result = await reviewCollection.deleteOne(query);
+			res.send(result)
+		}
+	});
 };
 //Client Start
 run().catch((err) => console.log(err));
