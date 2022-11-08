@@ -61,6 +61,13 @@ const run = async () => {
 		const result = await reviewCollection.insertOne(review);
 		res.send(result);
 	});
+	//Get all Reviews
+	app.get('/reviews', async (req, res) => {
+		const query = {};
+		const reviews = await reviewCollection.find(query).toArray();
+		const count = await reviewCollection.estimatedDocumentCount();
+		res.send({ count, reviews });
+	});
 };
 //Client Start
 run().catch((err) => console.log(err));
