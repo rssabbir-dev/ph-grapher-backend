@@ -32,9 +32,8 @@ const verifyTwtToken = (req, res, next) => {
 	}
 	try {
 		const decoded = jwt.verify(token, process.env.JWT_ACCESS_TOKEN);
-		req.decoded = decoded
-	}
-	catch(err) {
+		req.decoded = decoded;
+	} catch (err) {
 		return res.status(403).send({ message: 'Access Forbidden' });
 	}
 	next();
@@ -57,7 +56,8 @@ const run = async () => {
 	const database = client.db('phGrapherDB');
 	const serviceCollection = database.collection('services');
 	const reviewCollection = database.collection('reviews');
-	const blogCollection = database.collection('blogs')
+	const blogCollection = database.collection('blogs');
+	const testimonialCollection = database.collection('testimonials');
 
 	//Get All Services
 	app.get('/services', async (req, res) => {
@@ -193,10 +193,17 @@ const run = async () => {
 
 	//Get all Blogs
 	app.get('/blogs', async (req, res) => {
-		const query = {}
+		const query = {};
 		const blogs = await blogCollection.find(query).toArray();
-		res.send(blogs)
-	})
+		res.send(blogs);
+	});
+
+	//Get all Testimonial
+	app.get('/testimonials', async (req, res) => {
+		const query = {};
+		const testimonials = await testimonialCollection.find(query).toArray();
+		res.send(testimonials)
+	});
 };
 //Client Start
 run().catch((err) => console.log(err));
