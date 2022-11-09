@@ -2,6 +2,7 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000;
 require('dotenv').config();
@@ -16,7 +17,6 @@ app.get('/', (req, res) => {
 });
 
 //MongoDB Client
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.z9hjm.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
 	useNewUrlParser: true,
@@ -30,34 +30,34 @@ const verifyTwtToken = (req, res, next) => {
 	if (!authHeader) {
 		return res.status(401).send({ message: 'Unauthorized Access' });
 	}
-	jwt.verify(token, process.env.JWT_ACCESS_TOKEN, (err, decoded) => {
-		if (err) {
-			return res.status(401).send({ message: 'Unauthorized Access' });
-		}
-		req.decoded = decoded;
-	});
+	try {
+		const decoded = jwt.verify(token, process.env.JWT_ACCESS_TOKEN);
+		req.decoded = decoded
+	}
+	catch(err) {
+		return res.status(403).send({ message: 'Access Forbidden' });
+	}
 	next();
 };
 //JWT verify path
-	app.post('/jwt', (req, res) => {
-		const user = req.body;
-		const token = jwt.sign(
-			user,
-			process.env.JWT_ACCESS_TOKEN,
-			{
-				expiresIn: 60 * 60,
-			},
-			{ algorithm: 'RS256' }
-		);
-		res.send({ token });
-	});
+app.post('/jwt', (req, res) => {
+	const user = req.body;
+	const token = jwt.sign(
+		user,
+		process.env.JWT_ACCESS_TOKEN,
+		{
+			expiresIn: 60 * 60,
+		},
+		{ algorithm: 'RS256' }
+	);
+	res.send({ token });
+});
 //Client Start Function
 const run = async () => {
 	const database = client.db('phGrapherDB');
 	const serviceCollection = database.collection('services');
 	const reviewCollection = database.collection('reviews');
-
-	
+	const blogCollection = database.collection('blogs')
 
 	//Get All Services
 	app.get('/services', async (req, res) => {
@@ -67,13 +67,45 @@ const run = async () => {
 		if (limit) {
 			const services = await serviceCollection
 				.find(query)
+				.sort({ createAt: -1 })
 				.limit(limit)
 				.toArray();
 			res.send(services);
 		} else {
-			const services = await serviceCollection.find(query).toArray();
+			const services = await serviceCollection
+				.find(query)
+				.sort({ createAt: -1 })
+				.toArray();
 			res.send(services);
 		}
+	});
+
+	//Create A Service
+	app.post('/services', verifyTwtToken, async (req, res) => {
+		const decoded = req.decoded;
+		const service = req.body;
+		const uid = req.query.uid;
+		if (decoded.uid !== uid) {
+			return res.status(403).send({ message: 'Access Forbidden' });
+		}
+		const result = await serviceCollection.insertOne(service);
+		res.send(result);
+	});
+
+	//Get Only User Create Service
+	app.get('/my-service', verifyTwtToken, async (req, res) => {
+		const decoded = req.decoded;
+		const uid = req.query.uid;
+		const query = { createBy: uid };
+		if (decoded.uid !== uid) {
+			return res.status(403).send({ message: 'Access Forbidden' });
+		}
+		const services = await serviceCollection
+			.find(query)
+			.sort({ createAt: -1 })
+			.toArray();
+		const count = await serviceCollection.countDocuments(query);
+		res.send({ count, services });
 	});
 
 	//Get a Single Service
@@ -85,8 +117,13 @@ const run = async () => {
 	});
 
 	//Post A review
-	app.post('/review', async (req, res) => {
+	app.post('/review', verifyTwtToken, async (req, res) => {
+		const decoded = req.decoded;
 		const review = req.body;
+		const uid = req.query.uid;
+		if (decoded.uid !== uid) {
+			return res.status(403).send({ message: 'Access Forbidden' });
+		}
 		const result = await reviewCollection.insertOne(review);
 		res.send(result);
 	});
@@ -94,7 +131,10 @@ const run = async () => {
 	app.get('/reviews', async (req, res) => {
 		const service_id = req.query.service_id;
 		const query = { service_id: service_id };
-		const reviews = await reviewCollection.find(query).toArray();
+		const reviews = await reviewCollection
+			.find(query)
+			.sort({ createAt: -1 })
+			.toArray();
 		const count = await reviewCollection.countDocuments(query);
 		res.send({ count, reviews });
 	});
@@ -150,6 +190,13 @@ const run = async () => {
 			res.send(result);
 		}
 	});
+
+	//Get all Blogs
+	app.get('/blogs', async (req, res) => {
+		const query = {}
+		const blogs = await blogCollection.find(query).toArray();
+		res.send(blogs)
+	})
 };
 //Client Start
 run().catch((err) => console.log(err));
