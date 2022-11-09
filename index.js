@@ -38,26 +38,32 @@ const verifyTwtToken = (req, res, next) => {
 	});
 	next();
 };
-
+//JWT verify path
+	app.post('/jwt', (req, res) => {
+		const user = req.body;
+		const token = jwt.sign(
+			user,
+			process.env.JWT_ACCESS_TOKEN,
+			{
+				expiresIn: 60 * 60,
+			},
+			{ algorithm: 'RS256' }
+		);
+		res.send({ token });
+	});
 //Client Start Function
 const run = async () => {
 	const database = client.db('phGrapherDB');
 	const serviceCollection = database.collection('services');
 	const reviewCollection = database.collection('reviews');
 
-	//JWT verify path
-	app.post('/jwt', (req, res) => {
-		const user = req.body;
-		jwt.sign(user, process.env.JWT_ACCESS_TOKEN, (err, token) => {
-			res.send({ token });
-		});
-	});
+	
 
 	//Get All Services
 	app.get('/services', async (req, res) => {
 		const limit = parseInt(req.query.limit);
 		const query = {};
-		const count = await serviceCollection.estimatedDocumentCount();
+		// const count = await serviceCollection.estimatedDocumentCount();
 		if (limit) {
 			const services = await serviceCollection
 				.find(query)
@@ -110,8 +116,8 @@ const run = async () => {
 		}
 	});
 
-	//Delete A My Review 
-	app.delete('/my-review-delete/', verifyTwtToken,async (req, res) => {
+	//Delete A My Review
+	app.delete('/my-review-delete/', verifyTwtToken, async (req, res) => {
 		const decoded = req.decoded;
 		const id = req.query.id;
 		const uid = req.query.uid;
@@ -120,7 +126,28 @@ const run = async () => {
 			return res.status(403).send({ message: 'Access Forbidden' });
 		} else {
 			const result = await reviewCollection.deleteOne(query);
-			res.send(result)
+			res.send(result);
+		}
+	});
+
+	//Update Review Item
+	app.patch('/my-review-update', verifyTwtToken, async (req, res) => {
+		const decoded = req.decoded;
+		const id = req.query.id;
+		const uid = req.query.uid;
+		const review = req.body;
+		const filter = { _id: ObjectId(id) };
+		const updatedReview = {
+			$set: review,
+		};
+		if (decoded.uid !== uid) {
+			return res.status(403).send({ message: 'Access Forbidden' });
+		} else {
+			const result = await reviewCollection.updateOne(
+				filter,
+				updatedReview
+			);
+			res.send(result);
 		}
 	});
 };
