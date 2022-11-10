@@ -4,13 +4,20 @@ const app = express();
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
-const { signedCookie } = require('cookie-parser');
 const port = process.env.PORT || 5000;
 require('dotenv').config();
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
 
 //Use Middleware
 app.use(cors());
 app.use(express.json());
+app.use(
+	express.urlencoded({
+		extended: false,
+	})
+);
+app.use('/uploads', express.static('uploads'));
 
 //Default or Home path of server
 app.get('/', (req, res) => {
@@ -86,16 +93,32 @@ const run = async () => {
 	});
 
 	//Create A Service
-	app.post('/services', verifyTwtToken, async (req, res) => {
-		const decoded = req.decoded;
-		const service = req.body;
-		const uid = req.query.uid;
-		if (decoded.uid !== uid) {
-			return res.status(403).send({ message: 'Access Forbidden' });
+	app.post(
+		'/services',
+		upload.single('image'),
+		verifyTwtToken,
+		async (req, res) => {
+			const decoded = req.decoded;
+			const body = req.body;
+			const image = req.file;
+			const service = {
+				title: body.title,
+				img: `/${image.destination}${image.filename}`,
+				description: body.description,
+				price: body.price,
+				createBy: body.createBy,
+				createAt: body.createAt,
+			};
+			const uid = req.query.uid;
+			if (decoded.uid !== uid) {
+				return res.status(403).send({ message: 'Access Forbidden' });
+			}
+			const result = await serviceCollection.insertOne(service);
+			res.send(result);
+			console.log(image);
+			console.log(service);
 		}
-		const result = await serviceCollection.insertOne(service);
-		res.send(result);
-	});
+	);
 
 	//Get Only User Create Service
 	app.get('/my-service', verifyTwtToken, async (req, res) => {
@@ -135,8 +158,8 @@ const run = async () => {
 	//Get all Reviews
 	app.get('/reviews', async (req, res) => {
 		const service_id = req.query.service_id;
-		const page = parseInt(req.query.page)
-		const size = parseInt(req.query.size)
+		const page = parseInt(req.query.page);
+		const size = parseInt(req.query.size);
 		const query = { service_id: service_id };
 		const reviews = await reviewCollection
 			.find(query)
