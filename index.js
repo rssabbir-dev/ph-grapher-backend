@@ -4,6 +4,7 @@ const app = express();
 const cors = require('cors');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
+const { signedCookie } = require('cookie-parser');
 const port = process.env.PORT || 5000;
 require('dotenv').config();
 
@@ -45,11 +46,11 @@ app.post('/jwt', (req, res) => {
 		user,
 		process.env.JWT_ACCESS_TOKEN,
 		{
-			expiresIn: 60 * 60,
+			expiresIn: '1d',
 		},
 		{ algorithm: 'RS256' }
 	);
-	res.send({ token });
+	res.json({ token });
 });
 //Client Start Function
 const run = async () => {
@@ -80,7 +81,7 @@ const run = async () => {
 				.skip(page * size)
 				.limit(size)
 				.toArray();
-			res.send({count,services});
+			res.send({ count, services });
 		}
 	});
 
@@ -206,7 +207,7 @@ const run = async () => {
 	app.get('/testimonials', async (req, res) => {
 		const query = {};
 		const testimonials = await testimonialCollection.find(query).toArray();
-		res.send(testimonials)
+		res.send(testimonials);
 	});
 };
 //Client Start
