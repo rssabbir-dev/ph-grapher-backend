@@ -62,8 +62,10 @@ const run = async () => {
 	//Get All Services
 	app.get('/services', async (req, res) => {
 		const limit = parseInt(req.query.limit);
+		const page = parseInt(req.query.page);
+		const size = parseInt(req.query.size);
 		const query = {};
-		// const count = await serviceCollection.estimatedDocumentCount();
+		const count = await serviceCollection.estimatedDocumentCount();
 		if (limit) {
 			const services = await serviceCollection
 				.find(query)
@@ -75,8 +77,10 @@ const run = async () => {
 			const services = await serviceCollection
 				.find(query)
 				.sort({ createAt: -1 })
+				.skip(page * size)
+				.limit(size)
 				.toArray();
-			res.send(services);
+			res.send({count,services});
 		}
 	});
 
