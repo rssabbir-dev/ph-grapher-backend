@@ -135,13 +135,26 @@ const run = async () => {
 	//Get all Reviews
 	app.get('/reviews', async (req, res) => {
 		const service_id = req.query.service_id;
+		const page = parseInt(req.query.page)
+		const size = parseInt(req.query.size)
 		const query = { service_id: service_id };
 		const reviews = await reviewCollection
 			.find(query)
 			.sort({ createAt: -1 })
+			.skip(page * size)
+			.limit(size)
 			.toArray();
+		const reviewsRating = await reviewCollection.find(query).toArray();
 		const count = await reviewCollection.countDocuments(query);
-		res.send({ count, reviews });
+		const sum = reviewsRating.reduce(
+			(pre, cur) => pre + cur.user_rating,
+			0
+		);
+		let average = 0;
+		if (!isNaN(sum / count)) {
+			average = sum / count;
+		}
+		res.send({ count, reviews, average });
 	});
 
 	//Get Single User Review
