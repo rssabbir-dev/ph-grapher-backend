@@ -2,11 +2,10 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const jwt = require('jsonwebtoken');
-const { signedCookie } = require('cookie-parser');
 const port = process.env.PORT || 5000;
-require('dotenv').config();
 
 //Use Middleware
 app.use(cors());
@@ -59,6 +58,7 @@ const run = async () => {
 	const reviewCollection = database.collection('reviews');
 	const blogCollection = database.collection('blogs');
 	const testimonialCollection = database.collection('testimonials');
+	const userCollection = database.collection('users');
 
 	//Get All Services
 	app.get('/services', async (req, res) => {
@@ -132,11 +132,11 @@ const run = async () => {
 		const result = await reviewCollection.insertOne(review);
 		res.send(result);
 	});
-	//Get all Reviews
+	//Get all Reviews Query by service id
 	app.get('/reviews', async (req, res) => {
 		const service_id = req.query.service_id;
-		const page = parseInt(req.query.page)
-		const size = parseInt(req.query.size)
+		const page = parseInt(req.query.page);
+		const size = parseInt(req.query.size);
 		const query = { service_id: service_id };
 		const reviews = await reviewCollection
 			.find(query)
@@ -219,8 +219,58 @@ const run = async () => {
 	//Get all Testimonial
 	app.get('/testimonials', async (req, res) => {
 		const query = {};
-		const testimonials = await testimonialCollection.find(query).toArray();
+		const testimonials = await reviewCollection.find(query).sort({createAt: -1}).limit(3).toArray();
 		res.send(testimonials);
+	});
+	//Get all user
+	app.get('/users', async (req, res) => {
+		const query = {};
+		const users = await userCollection.find(query).toArray();
+		res.send(users);
+	});
+	//Add New User To Database
+	app.post('/users', async (req, res) => {
+		const user = req.body;
+		const option = { upsert: true };
+		const query = { uid: user.uid };
+		const userInDb = await userCollection.findOne(query);
+		if (userInDb?.uid) {
+			return;
+		}
+		const result = userCollection.insertOne(user, option);
+		res.send(result);
+	});
+
+	//Check User isAdmin?
+	app.get('/user/admin/:uid', async (req, res) => {
+		const uid = req.params.uid;
+		const query = { uid };
+		const userInDb = await userCollection.findOne(query);
+		// if (userInDb?.role === 'admin') {
+		// 	return res.send(true);
+		// } else {
+		// 	return res.send(false);
+		// }
+		res.send({ isAdmin: userInDb?.role === 'admin' ? true : false });
+	});
+	//make admin
+	app.patch('/user/admin/:id', async (req, res) => {
+		const uid = req.body;
+		const id = req.params.id;
+		const queryAdmin = { uid: uid.uid };
+		const queryUser = { _id: ObjectId(id) };
+		const isAdmin = await userCollection.findOne(queryAdmin);
+		if (isAdmin?.role !== 'admin') {
+			return;
+		}
+		const updatedDoc = {
+			$set: {
+				role: 'admin',
+			},
+		};
+		const option = { upsert: true };
+		const result = userCollection.updateOne(queryUser, updatedDoc, option);
+		res.send(result);
 	});
 };
 //Client Start
