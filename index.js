@@ -44,9 +44,6 @@ app.post('/jwt', (req, res) => {
 	const token = jwt.sign(
 		user,
 		process.env.JWT_ACCESS_TOKEN,
-		{
-			expiresIn: '1d',
-		},
 		{ algorithm: 'RS256' }
 	);
 	res.json({ token });
