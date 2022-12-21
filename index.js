@@ -132,7 +132,8 @@ const run = async () => {
 		const result = await reviewCollection.insertOne(review);
 		res.send(result);
 	});
-	//Get all Reviews Query by service id
+	
+	//Get all Reviews
 	app.get('/reviews', async (req, res) => {
 		const service_id = req.query.service_id;
 		const page = parseInt(req.query.page);
@@ -219,7 +220,7 @@ const run = async () => {
 	//Get all Testimonial
 	app.get('/testimonials', async (req, res) => {
 		const query = {};
-		const testimonials = await reviewCollection.find(query).sort({createAt: -1}).limit(3).toArray();
+		const testimonials = await reviewCollection.find(query).sort({createAt: -1}).limit(4).toArray();
 		res.send(testimonials);
 	});
 	//Get all user
@@ -228,50 +229,50 @@ const run = async () => {
 		const users = await userCollection.find(query).toArray();
 		res.send(users);
 	});
-	//Add New User To Database
-	app.post('/users', async (req, res) => {
-		const user = req.body;
-		const option = { upsert: true };
-		const query = { uid: user.uid };
-		const userInDb = await userCollection.findOne(query);
-		if (userInDb?.uid) {
-			return;
-		}
-		const result = userCollection.insertOne(user, option);
-		res.send(result);
-	});
+	// //Add New User To Database
+	// app.post('/users', async (req, res) => {
+	// 	const user = req.body;
+	// 	const option = { upsert: true };
+	// 	const query = { uid: user.uid };
+	// 	const userInDb = await userCollection.findOne(query);
+	// 	if (userInDb?.uid) {
+	// 		return;
+	// 	}
+	// 	const result = userCollection.insertOne(user, option);
+	// 	res.send(result);
+	// });
 
-	//Check User isAdmin?
-	app.get('/user/admin/:uid', async (req, res) => {
-		const uid = req.params.uid;
-		const query = { uid };
-		const userInDb = await userCollection.findOne(query);
-		// if (userInDb?.role === 'admin') {
-		// 	return res.send(true);
-		// } else {
-		// 	return res.send(false);
-		// }
-		res.send({ isAdmin: userInDb?.role === 'admin' ? true : false });
-	});
-	//make admin
-	app.patch('/user/admin/:id', async (req, res) => {
-		const uid = req.body;
-		const id = req.params.id;
-		const queryAdmin = { uid: uid.uid };
-		const queryUser = { _id: ObjectId(id) };
-		const isAdmin = await userCollection.findOne(queryAdmin);
-		if (isAdmin?.role !== 'admin') {
-			return;
-		}
-		const updatedDoc = {
-			$set: {
-				role: 'admin',
-			},
-		};
-		const option = { upsert: true };
-		const result = userCollection.updateOne(queryUser, updatedDoc, option);
-		res.send(result);
-	});
+	// //Check User isAdmin?
+	// app.get('/user/admin/:uid', async (req, res) => {
+	// 	const uid = req.params.uid;
+	// 	const query = { uid };
+	// 	const userInDb = await userCollection.findOne(query);
+	// 	// if (userInDb?.role === 'admin') {
+	// 	// 	return res.send(true);
+	// 	// } else {
+	// 	// 	return res.send(false);
+	// 	// }
+	// 	res.send({ isAdmin: userInDb?.role === 'admin' ? true : false });
+	// });
+	// //make admin
+	// app.patch('/user/admin/:id', async (req, res) => {
+	// 	const uid = req.body;
+	// 	const id = req.params.id;
+	// 	const queryAdmin = { uid: uid.uid };
+	// 	const queryUser = { _id: ObjectId(id) };
+	// 	const isAdmin = await userCollection.findOne(queryAdmin);
+	// 	if (isAdmin?.role !== 'admin') {
+	// 		return;
+	// 	}
+	// 	const updatedDoc = {
+	// 		$set: {
+	// 			role: 'admin',
+	// 		},
+	// 	};
+	// 	const option = { upsert: true };
+	// 	const result = userCollection.updateOne(queryUser, updatedDoc, option);
+	// 	res.send(result);
+	// });
 };
 //Client Start
 run().catch((err) => console.log(err));

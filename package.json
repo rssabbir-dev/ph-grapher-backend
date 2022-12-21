@@ -17,13 +17,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Porgramming-Hero-web-course/b6a11-service-review-server-side-rssabbir-dev.git"
+    "url": "git+https://github.com/rssabbir-dev/ph-grapher-backend"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/Porgramming-Hero-web-course/b6a11-service-review-server-side-rssabbir-dev/issues"
+    "url": "https://github.com/rssabbir-dev/ph-grapher-backend/issues"
   },
-  "homepage": "https://github.com/Porgramming-Hero-web-course/b6a11-service-review-server-side-rssabbir-dev#readme"
+  "homepage": "https://github.com/rssabbir-dev/ph-grapher-backend#readme"
 }
